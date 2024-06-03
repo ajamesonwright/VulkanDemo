@@ -5,7 +5,7 @@
 #include "vulkan_demo.h"
 
 int main() {
-	vd::VulkanDemo app{};
+	vd::VulkanDemo app;
 
 	try {
 		app.run();
