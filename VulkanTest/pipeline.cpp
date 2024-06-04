@@ -1,9 +1,5 @@
 #include "pipeline.h"
 
-#include <fstream>
-#include <iostream>
-#include <stdexcept>
-
 namespace vd {
 
 	VulkanPipeline::VulkanPipeline(const std::string& vertPath, const std::string& fragPath) {
@@ -15,6 +11,10 @@ namespace vd {
 		// Open file from given path using binary format, jump to end
 		std::ifstream file{ filePath, std::ios::ate | std::ios::binary };
 
+		if (!file.good()) {
+			std::cout << "Trying to read from file: " << filePath << std::endl;
+			throw std::runtime_error("Error while opening file " + filePath);
+		}
 		if (!file.is_open()) {
 			throw std::runtime_error("Error while opening file " + filePath);
 		}

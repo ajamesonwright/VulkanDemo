@@ -2,6 +2,7 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
 
 #include <string>
 
@@ -16,6 +17,7 @@ namespace vd {
 
 		void initWindow();
 		bool shouldClose() { return glfwWindowShouldClose(window); }
+		GLFWwindow& getWindow() { return *window; };
 
 	private:
 		const int width;
