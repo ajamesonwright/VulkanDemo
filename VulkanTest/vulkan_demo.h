@@ -65,6 +65,7 @@ namespace vd {
 		std::vector<VkImage> swapChainImages;
 		VkFormat swapChainImageFormat;
 		VkExtent2D swapChangeImageExtent;
+		std::vector<VkImageView> swapChainImageViews;
 
 		bool checkValidationLayerSupport();
 		std::vector<const char*> getRequiredExtensions();
@@ -83,6 +84,7 @@ namespace vd {
 		VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 		void createLogicalDevice();
 		void createSwapChain();
+		void createImageViews();
 		void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 		void configureDebugMessenger();
 	};
