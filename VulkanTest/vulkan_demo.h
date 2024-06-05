@@ -52,8 +52,11 @@ namespace vd {
 		void run();
 
 	private:
+		const std::string VERT = "shaders/shader.vert.spv";
+		const std::string FRAG = "shaders/shader.frag.spv";
+
 		WindowWrapper window{WIDTH, HEIGHT, "Vulkan Demo"};
-		//VulkanPipeline pipeline{ "shaders/simple_shader.vert.spv", "shaders/simple_shader.frag.spv" };
+		VulkanPipeline pipeline;
 		VkInstance instance;
 		VkDebugUtilsMessengerEXT debugMessenger;
 		VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
@@ -85,6 +88,7 @@ namespace vd {
 		void createLogicalDevice();
 		void createSwapChain();
 		void createImageViews();
+		void createPipeline();
 		void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 		void configureDebugMessenger();
 	};

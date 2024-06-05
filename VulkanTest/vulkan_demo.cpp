@@ -10,11 +10,13 @@ namespace vd {
         createLogicalDevice();
         createSwapChain();
         createImageViews();
+        createPipeline();
 
 		run();
 	}
 
 	VulkanDemo::~VulkanDemo() {
+        pipeline.cleanUp();
         if (enableValidationLayers) {
             destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
         }
@@ -408,6 +410,10 @@ namespace vd {
         }
     }
 
+    void VulkanDemo::createPipeline() {
+        pipeline.createGraphicsPipeline(logicalDevice, swapChainImageFormat, VERT, FRAG);
+    }
+
     void VulkanDemo::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
         createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -416,6 +422,7 @@ namespace vd {
         createInfo.pfnUserCallback = debugCallback;
         createInfo.pUserData = nullptr;
     }
+
 
     void VulkanDemo::configureDebugMessenger() {
         if (!enableValidationLayers) {
