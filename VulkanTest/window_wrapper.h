@@ -17,11 +17,15 @@ namespace vd {
 		void initWindow();
 		bool shouldClose() { return glfwWindowShouldClose(window); }
 		GLFWwindow& getWindow() { return *window; };
+		VkInstance& getVkInstance() { return instance; }
+		VkSurfaceKHR& getVkSurface() { return surface; }
 
 	private:
 		const int width;
 		const int height;
 		std::string name;
 		GLFWwindow* window;
+		VkInstance instance;
+		VkSurfaceKHR surface;
 	};
 }
