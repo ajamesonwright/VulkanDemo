@@ -6,6 +6,7 @@
 #include <string>
 
 namespace vd {
+
 	class WindowWrapper {
 
 	public:
@@ -24,8 +25,8 @@ namespace vd {
 		const int width;
 		const int height;
 		std::string name;
-		GLFWwindow* window;
-		VkInstance instance;
-		VkSurfaceKHR surface;
+		GLFWwindow* window = nullptr;
+		VkInstance instance = VK_NULL_HANDLE;
+		VkSurfaceKHR surface = VK_NULL_HANDLE;
 	};
 }

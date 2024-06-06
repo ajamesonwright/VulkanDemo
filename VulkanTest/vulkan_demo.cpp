@@ -3,6 +3,7 @@
 namespace vd {
 
 	VulkanDemo::VulkanDemo() {
+        initWindow();
 		initVulkan();
         configureDebugMessenger();
         createSurface();
@@ -28,6 +29,12 @@ namespace vd {
             pipeline.drawFrame();
 		}
 	}
+
+    void VulkanDemo::initWindow() {
+        window.initWindow();
+        
+        glfwSetFramebufferSizeCallback(&window.getWindow(), framebufferResizeCallback);
+    }
 
     bool VulkanDemo::checkValidationLayerSupport() {
         uint32_t layerCount;
@@ -159,5 +166,10 @@ namespace vd {
         if (createDebugUtilsMessengerEXT(window.getVkInstance(), &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
             throw std::runtime_error("Failed to configure debug messenger");
         }
+    }
+
+    void VulkanDemo::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+        auto app = reinterpret_cast<VulkanDemo*>(glfwGetWindowUserPointer(window));
+        app->getPipeline()->setFramebufferResized();
     }
 }

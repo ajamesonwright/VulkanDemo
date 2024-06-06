@@ -14,7 +14,6 @@
 
 #include "window_wrapper.h"
 
-
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else
@@ -47,14 +46,15 @@ struct SwapChainSupportDetails {
 namespace vd {
 	class VulkanPipeline {
 	public:
+		const int MAX_FRAMES_IN_FLIGHT = 2;
+
 		void createGraphicsPipeline(WindowWrapper& window, const std::string& vertPath, const std::string& fragPath);
 		void cleanUp();
 		void drawFrame();
+		void setFramebufferResized();
 
 	private:
 		WindowWrapper* window = nullptr;
-		//VkInstance instance = nullptr;
-		//VkSurfaceKHR surface = nullptr;
 		VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 		VkDevice logicalDevice = VK_NULL_HANDLE;
 		VkSurfaceKHR surface;
@@ -70,10 +70,12 @@ namespace vd {
 		VkPipeline pipeline;
 		std::vector<VkFramebuffer> swapChainFrameBuffers;
 		VkCommandPool commandPool;
-		VkCommandBuffer commandBuffer;
-		VkSemaphore imageAvailableSemaphore;
-		VkSemaphore renderFinishedSemaphore;
-		VkFence inFlightFence;
+		std::vector<VkCommandBuffer> commandBuffers;
+		std::vector<VkSemaphore> imageAvailableSemaphores;
+		std::vector<VkSemaphore> renderFinishedSemaphores;
+		std::vector<VkFence> inFlightFences;
+		uint32_t currentFrame = 0;
+		bool framebufferResized = false;
 
 		void selectPhysicalDevice();
 		bool isDeviceSuitable(VkPhysicalDevice device);
@@ -85,12 +87,14 @@ namespace vd {
 		VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 		void createLogicalDevice();
 		void createSwapChain();
+		void recreateSwapChain();
+		void cleanUpSwapChain();
 		void createImageViews();
 		void createRenderPass();
 		void createGraphicsPipeline(const std::string& vertPath, const std::string& fragPath);
 		void createFramebuffers();
 		void createCommandPool();
-		void createCommandBuffer();
+		void createCommandBuffers();
 		void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 		void createSyncObjects();
 		VkShaderModule createShaderModule(const std::vector<char>& code);
