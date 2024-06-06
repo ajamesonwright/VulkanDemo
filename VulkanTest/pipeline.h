@@ -62,7 +62,7 @@ namespace vd {
 		VkSwapchainKHR swapChain;
 		std::vector<VkImage> swapChainImages;
 		VkFormat swapChainImageFormat;
-		VkExtent2D swapChangeImageExtent;
+		VkExtent2D swapChainImageExtent;
 		std::vector<VkImageView> swapChainImageViews;
 		VkRenderPass renderPass;
 		VkPipelineLayout pipelineLayout;

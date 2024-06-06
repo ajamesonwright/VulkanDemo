@@ -15,6 +15,9 @@ namespace vd {
 
 	void VulkanPipeline::cleanUp() {
 		if (logicalDevice) {
+			for (auto frameBuffer : swapChainFrameBuffers) {
+				vkDestroyFramebuffer(logicalDevice, frameBuffer, nullptr);
+			}
 			vkDestroyPipeline(logicalDevice, pipeline, nullptr);
 			vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
 			vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
@@ -267,7 +270,7 @@ namespace vd {
 		vkGetSwapchainImagesKHR(logicalDevice, swapChain, &swapChainImageCount, swapChainImages.data());
 
 		swapChainImageFormat = surfaceFormat.format;
-		swapChangeImageExtent = extent;
+		swapChainImageExtent = extent;
 	}
 
 	void VulkanPipeline::createImageViews() {
@@ -441,7 +444,26 @@ namespace vd {
 	}
 
 	void VulkanPipeline::createFramebuffers() {
+		swapChainFrameBuffers.resize(swapChainImageViews.size());
 
+		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
+			VkImageView attachments[] = {
+				swapChainImageViews[i]
+			};
+
+			VkFramebufferCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			createInfo.renderPass = renderPass;
+			createInfo.attachmentCount = 1;
+			createInfo.pAttachments = attachments;
+			createInfo.width = swapChainImageExtent.width;
+			createInfo.height = swapChainImageExtent.height;
+			createInfo.layers = 1;
+
+			if (vkCreateFramebuffer(logicalDevice, &createInfo, nullptr, &swapChainFrameBuffers[i]) != VK_SUCCESS) {
+				throw std::runtime_error("Failed to create framebuffer for index " + i);
+			}
+		}
 	}
 
 	VkShaderModule VulkanPipeline::createShaderModule(const std::vector<char>& code) {
