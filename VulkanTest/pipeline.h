@@ -49,6 +49,7 @@ namespace vd {
 	public:
 		void createGraphicsPipeline(WindowWrapper& window, const std::string& vertPath, const std::string& fragPath);
 		void cleanUp();
+		void drawFrame();
 
 	private:
 		WindowWrapper* window = nullptr;
@@ -68,6 +69,11 @@ namespace vd {
 		VkPipelineLayout pipelineLayout;
 		VkPipeline pipeline;
 		std::vector<VkFramebuffer> swapChainFrameBuffers;
+		VkCommandPool commandPool;
+		VkCommandBuffer commandBuffer;
+		VkSemaphore imageAvailableSemaphore;
+		VkSemaphore renderFinishedSemaphore;
+		VkFence inFlightFence;
 
 		void selectPhysicalDevice();
 		bool isDeviceSuitable(VkPhysicalDevice device);
@@ -83,6 +89,10 @@ namespace vd {
 		void createRenderPass();
 		void createGraphicsPipeline(const std::string& vertPath, const std::string& fragPath);
 		void createFramebuffers();
+		void createCommandPool();
+		void createCommandBuffer();
+		void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+		void createSyncObjects();
 		VkShaderModule createShaderModule(const std::vector<char>& code);
 		static std::vector<char> readFile(const std::string& filePath);
 	};

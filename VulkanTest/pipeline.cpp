@@ -11,10 +11,18 @@ namespace vd {
 		createRenderPass();
 		createGraphicsPipeline(vertPath, fragPath);
 		createFramebuffers();
+		createCommandPool();
+		createCommandBuffer();
+		createSyncObjects();
 	}
 
 	void VulkanPipeline::cleanUp() {
 		if (logicalDevice) {
+			vkDestroySemaphore(logicalDevice, imageAvailableSemaphore, nullptr);
+			vkDestroySemaphore(logicalDevice, renderFinishedSemaphore, nullptr);
+			vkDestroyFence(logicalDevice, inFlightFence, nullptr);
+
+			vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
 			for (auto frameBuffer : swapChainFrameBuffers) {
 				vkDestroyFramebuffer(logicalDevice, frameBuffer, nullptr);
 			}
@@ -28,6 +36,51 @@ namespace vd {
 			vkDestroySwapchainKHR(logicalDevice, swapChain, nullptr);
 			vkDestroyDevice(logicalDevice, nullptr);
 		}
+	}
+
+	void VulkanPipeline::drawFrame() {
+		vkWaitForFences(logicalDevice, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
+
+		vkResetFences(logicalDevice, 1, &inFlightFence);
+
+		uint32_t imageIndex;
+		vkAcquireNextImageKHR(logicalDevice, swapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+		vkResetCommandBuffer(commandBuffer, 0);
+
+		recordCommandBuffer(commandBuffer, imageIndex);
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+		VkSemaphore waitSemaphores[] = { imageAvailableSemaphore };
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = waitSemaphores;
+		submitInfo.pWaitDstStageMask = waitStages;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
+		VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = signalSemaphores;
+
+		if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFence) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to submit draw command buffer!");
+		}
+
+		VkPresentInfoKHR presentInfo{};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = signalSemaphores;
+
+		VkSwapchainKHR swapChains[] = { swapChain };
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = swapChains;
+		presentInfo.pImageIndices = &imageIndex;
+		presentInfo.pResults = nullptr;
+
+		vkQueuePresentKHR(presentQueue, &presentInfo);
 	}
 
 	void VulkanPipeline::selectPhysicalDevice() {
@@ -328,6 +381,17 @@ namespace vd {
 		if (vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create render pass!");
 		}
+
+		VkSubpassDependency subpassDependency{};
+		subpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		subpassDependency.dstSubpass = 0;
+		subpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		subpassDependency.srcAccessMask = 0;
+		subpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		renderPassInfo.dependencyCount = 1;
+		renderPassInfo.pDependencies = &subpassDependency;
 	}
 
 	void VulkanPipeline::createGraphicsPipeline(const std::string& vertPath, const std::string& fragPath) {
@@ -463,6 +527,91 @@ namespace vd {
 			if (vkCreateFramebuffer(logicalDevice, &createInfo, nullptr, &swapChainFrameBuffers[i]) != VK_SUCCESS) {
 				throw std::runtime_error("Failed to create framebuffer for index " + i);
 			}
+		}
+	}
+
+	void VulkanPipeline::createCommandPool() {
+		QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
+
+		VkCommandPoolCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		createInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+
+		if (vkCreateCommandPool(logicalDevice, &createInfo, nullptr, &commandPool) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create command pool!");
+		}
+	}
+
+	void VulkanPipeline::createCommandBuffer() {
+		VkCommandBufferAllocateInfo allocateInfo{};
+		allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocateInfo.commandPool = commandPool;
+		allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocateInfo.commandBufferCount = 1;
+
+		if (vkAllocateCommandBuffers(logicalDevice, &allocateInfo, &commandBuffer) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create command pool!");
+		}
+	}
+
+	void VulkanPipeline::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+		VkCommandBufferBeginInfo commandBeginInfo{};
+		commandBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		
+		if (vkBeginCommandBuffer(commandBuffer, &commandBeginInfo) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to begin recording command buffer!");
+		}
+
+		VkRenderPassBeginInfo renderBeginInfo{};
+		renderBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderBeginInfo.renderPass = renderPass;
+		renderBeginInfo.framebuffer = swapChainFrameBuffers[imageIndex];
+		renderBeginInfo.renderArea.offset = { 0,0 };
+		renderBeginInfo.renderArea.extent = swapChainImageExtent;
+		VkClearValue clearColour = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
+		renderBeginInfo.clearValueCount = 1;
+		renderBeginInfo.pClearValues = &clearColour;
+
+		vkCmdBeginRenderPass(commandBuffer, &renderBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<uint32_t>(swapChainImageExtent.width);
+		viewport.height = static_cast<uint32_t>(swapChainImageExtent.height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+		
+		VkRect2D scissor{};
+		scissor.offset = { 0,0 };
+		scissor.extent = swapChainImageExtent;
+		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+		vkCmdEndRenderPass(commandBuffer);
+
+		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to record command buffer!");
+		}
+	}
+
+	void VulkanPipeline::createSyncObjects() {
+		VkSemaphoreCreateInfo semaphoreInfo{};
+		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+		VkFenceCreateInfo fenceInfo{};
+		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+		if (vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
+			vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS ||
+			vkCreateFence(logicalDevice, &fenceInfo, nullptr, &inFlightFence) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create synchronization object(s)!");
 		}
 	}
 

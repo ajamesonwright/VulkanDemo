@@ -25,6 +25,7 @@ namespace vd {
         // main loop
 		while (!window.shouldClose()) {
 			glfwPollEvents();
+            pipeline.drawFrame();
 		}
 	}
 
