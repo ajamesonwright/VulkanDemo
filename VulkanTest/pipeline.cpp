@@ -2,24 +2,17 @@
 
 namespace vd {
 
-	/*VulkanPipeline::VulkanPipeline(const VkDevice& pLogicalDevice, const std::string& vertPath, const std::string& fragPath) {
-		logicalDevice = pLogicalDevice;
-		createPipeline(vertPath, fragPath);
-	}*/
-
-	//VulkanPipeline::~VulkanPipeline() {
-		//vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
-	//}
-
-	void VulkanPipeline::createGraphicsPipeline(const VkDevice& pLogicalDevice, const VkFormat& pSwapChainImageFormat, const std::string& vertPath, const std::string& fragPath) {
-		logicalDevice = pLogicalDevice;
-		swapChainImageFormat = pSwapChainImageFormat;
+	void VulkanPipeline::createGraphicsPipeline(const VkDevice device, const VkFormat format, const std::string& vertPath, const std::string& fragPath) {
+		logicalDevice = device;
+		swapChainImageFormat = format;
 		createRenderPass();
 		createGraphicsPipeline(vertPath, fragPath);
+		createFramebuffers();
 	}
 
 	void VulkanPipeline::cleanUp() {
 		if (logicalDevice) {
+			vkDestroyPipeline(logicalDevice, pipeline, nullptr);
 			vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
 			vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
 		}
@@ -30,10 +23,6 @@ namespace vd {
 		// Open file from given path using binary format, jump to end
 		std::ifstream file{ filePath, std::ios::ate | std::ios::binary };
 
-		if (!file.good()) {
-			std::cout << "Trying to read from file: " << filePath << std::endl;
-			throw std::runtime_error("Error while opening file " + filePath);
-		}
 		if (!file.is_open()) {
 			throw std::runtime_error("Error while opening file " + filePath);
 		}
@@ -103,7 +92,7 @@ namespace vd {
 
 		VkPipelineShaderStageCreateInfo fragShaderStageCreateInfo{};
 		fragShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		fragShaderStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+		fragShaderStageCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 		fragShaderStageCreateInfo.module = fragShaderModule;
 		fragShaderStageCreateInfo.pName = "main";
 
@@ -172,10 +161,35 @@ namespace vd {
 			throw std::runtime_error("Failed to create pipeline layout!");
 		}
 
+		VkGraphicsPipelineCreateInfo pipelineCreateInfo{};
+		pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		pipelineCreateInfo.stageCount = 2;
+		pipelineCreateInfo.pStages = shaderStages;
+		pipelineCreateInfo.pVertexInputState = &vertexInputStateCreateInfo;
+		pipelineCreateInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
+		pipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
+		pipelineCreateInfo.pRasterizationState = &rasterizerStateCreateInfo;
+		pipelineCreateInfo.pMultisampleState = &multisamplingStateCreateInfo;
+		pipelineCreateInfo.pColorBlendState = &colorBlendStateCreateInfo;
+		pipelineCreateInfo.pDynamicState = &dynamicState;
+		pipelineCreateInfo.layout = pipelineLayout;
+		pipelineCreateInfo.renderPass = renderPass;
+		pipelineCreateInfo.subpass = 0;
+
+		pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+		//pipelineCreateInfo.basePipelineIndex = -1;
+
+		if (vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create pipeline!");
+		}
+
 		vkDestroyShaderModule(logicalDevice, vertShaderModule, nullptr);
 		vkDestroyShaderModule(logicalDevice, fragShaderModule, nullptr);
 	}
 
+	void VulkanPipeline::createFramebuffers() {
+
+	}
 
 	VkShaderModule VulkanPipeline::createShaderModule(const std::vector<char>& code) {
 		VkShaderModuleCreateInfo createInfo{};

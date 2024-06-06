@@ -12,10 +12,7 @@
 namespace vd {
 	class VulkanPipeline {
 	public:
-		//VulkanPipeline();
-		//~VulkanPipeline();
-		//const VkDevice& logicalDevice, const std::string& vertPath, const std::string& fragPath);
-		void createGraphicsPipeline(const VkDevice& logicalDevice, const VkFormat& swapChainImageFormat, const std::string& vertPath, const std::string& fragPath);
+		void createGraphicsPipeline(const VkDevice device, const VkFormat format, const std::string& vertPath, const std::string& fragPath);
 		void cleanUp();
 
 	private:
@@ -23,10 +20,13 @@ namespace vd {
 		VkFormat swapChainImageFormat;
 		VkRenderPass renderPass;
 		VkPipelineLayout pipelineLayout;
+		VkPipeline pipeline;
+		std::vector<VkFramebuffer> swapChainFrameBuffers;
 
+		static std::vector<char> readFile(const std::string& filePath);
 		void createRenderPass();
 		void createGraphicsPipeline(const std::string& vertPath, const std::string& fragPath);
-		static std::vector<char> readFile(const std::string& filePath);
+		void createFramebuffers();
 		VkShaderModule createShaderModule(const std::vector<char>& code);
 	};
 }
