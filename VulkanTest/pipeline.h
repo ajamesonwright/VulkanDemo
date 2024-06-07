@@ -6,6 +6,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#define STB_IMAGE_IMPLEMENTION
+#include <stb_image.h>
+
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -122,6 +125,8 @@ namespace vd {
 		VkPipeline pipeline;
 		std::vector<VkFramebuffer> swapChainFrameBuffers;
 		VkCommandPool commandPool;
+		VkImage textureImage;
+		VkDeviceMemory textureImageMemory;
 		VkBuffer vertexBuffer;
 		VkDeviceMemory vertexBufferMemory;
 		VkBuffer indexBuffer;
@@ -156,6 +161,8 @@ namespace vd {
 		void createGraphicsPipeline(const std::string& vertPath, const std::string& fragPath);
 		void createFramebuffers();
 		void createCommandPool();
+		void createTextureImage();
+		void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 		void createVertexBuffer();
 		void createIndexBuffer();
 		void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
