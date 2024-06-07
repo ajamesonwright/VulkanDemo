@@ -12,6 +12,7 @@ namespace vd {
 		createGraphicsPipeline(vertPath, fragPath);
 		createFramebuffers();
 		createCommandPool();
+		createVertexBuffer();
 		createCommandBuffers();
 		createSyncObjects();
 	}
@@ -20,6 +21,8 @@ namespace vd {
 		if (logicalDevice) {
 			cleanUpSwapChain();
 
+			vkDestroyBuffer(logicalDevice, vertexBuffer, nullptr);
+			vkFreeMemory(logicalDevice, vertexBufferMemory, nullptr);
 			for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 				vkDestroySemaphore(logicalDevice, imageAvailableSemaphores[i], nullptr);
 				vkDestroySemaphore(logicalDevice, renderFinishedSemaphores[i], nullptr);
@@ -591,6 +594,50 @@ namespace vd {
 		}
 	}
 
+	void VulkanPipeline::createVertexBuffer() {
+		VkBufferCreateInfo bufferCreateInfo{};
+		bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferCreateInfo.size = sizeof(vertices[0]) * vertices.size();
+		bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		if (vkCreateBuffer(logicalDevice, &bufferCreateInfo, nullptr, &vertexBuffer) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create vertex buffer!");
+		}
+
+		VkMemoryRequirements bufferMemoryRequirements;
+		vkGetBufferMemoryRequirements(logicalDevice, vertexBuffer, &bufferMemoryRequirements);
+
+		VkMemoryAllocateInfo allocateInfo{};
+		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocateInfo.allocationSize = bufferMemoryRequirements.size;
+		allocateInfo.memoryTypeIndex = findMemoryType(bufferMemoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+		if (vkAllocateMemory(logicalDevice, &allocateInfo, nullptr, &vertexBufferMemory) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to allocate vertex buffer memory!");
+		}
+
+		vkBindBufferMemory(logicalDevice, vertexBuffer, vertexBufferMemory, 0);
+
+		void* data;
+		vkMapMemory(logicalDevice, vertexBufferMemory, 0, bufferCreateInfo.size, 0, &data);
+		memcpy(data, vertices.data(), (size_t)bufferCreateInfo.size);
+		vkUnmapMemory(logicalDevice, vertexBufferMemory);
+	}
+
+	uint32_t VulkanPipeline::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+		VkPhysicalDeviceMemoryProperties memoryProperties;
+		vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
+
+		for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+			if (typeFilter & (1 << i) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+				return i;
+			}
+		}
+
+		throw std::runtime_error("Failed to find suitable memory type!");
+	}
+
 	void VulkanPipeline::createCommandBuffers() {
 		commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
@@ -619,6 +666,7 @@ namespace vd {
 		renderBeginInfo.framebuffer = swapChainFrameBuffers[imageIndex];
 		renderBeginInfo.renderArea.offset = { 0,0 };
 		renderBeginInfo.renderArea.extent = swapChainImageExtent;
+
 		VkClearValue clearColour = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
 		renderBeginInfo.clearValueCount = 1;
 		renderBeginInfo.pClearValues = &clearColour;
@@ -641,13 +689,19 @@ namespace vd {
 		scissor.extent = swapChainImageExtent;
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+		VkBuffer vertexBuffers[] = { vertexBuffer };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+		vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 
 		vkCmdEndRenderPass(commandBuffer);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to record command buffer!");
 		}
+
+
 	}
 
 	void VulkanPipeline::createSyncObjects() {
