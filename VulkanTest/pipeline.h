@@ -1,11 +1,14 @@
 #pragma once
 
+#define GLM_FORCE_RADIANS
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
-#include "glm.hpp"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <iostream>
 #include <fstream>
 #include <optional>
@@ -74,6 +77,12 @@ struct Vertex {
 	}
 };
 
+struct UniformBufferObject {
+	glm::mat4 model;
+	glm::mat4 view;
+	glm::mat4 proj;
+};
+
 namespace vd {
 	class VulkanPipeline {
 	public:
@@ -108,6 +117,7 @@ namespace vd {
 		VkExtent2D swapChainImageExtent;
 		std::vector<VkImageView> swapChainImageViews;
 		VkRenderPass renderPass;
+		VkDescriptorSetLayout descriptorSetLayout;
 		VkPipelineLayout pipelineLayout;
 		VkPipeline pipeline;
 		std::vector<VkFramebuffer> swapChainFrameBuffers;
@@ -116,6 +126,11 @@ namespace vd {
 		VkDeviceMemory vertexBufferMemory;
 		VkBuffer indexBuffer;
 		VkDeviceMemory indexBufferMemory;
+		std::vector<VkBuffer> uniformBuffers;
+		std::vector<VkDeviceMemory> uniformBuffersMemory;
+		std::vector<void*> uniformBuffersMapped;
+		VkDescriptorPool descriptorPool;
+		std::vector<VkDescriptorSet> descriptorSets;
 		std::vector<VkCommandBuffer> commandBuffers;
 		std::vector<VkSemaphore> imageAvailableSemaphores;
 		std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -137,6 +152,7 @@ namespace vd {
 		void cleanUpSwapChain();
 		void createImageViews();
 		void createRenderPass();
+		void createDescriptorSetLayout();
 		void createGraphicsPipeline(const std::string& vertPath, const std::string& fragPath);
 		void createFramebuffers();
 		void createCommandPool();
@@ -144,6 +160,10 @@ namespace vd {
 		void createIndexBuffer();
 		void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 		void copyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size);
+		void createUniformBuffers();
+		void createDescriptorPool();
+		void createDescriptorSets();
+		void updateUniformBuffer(uint32_t frameIndex);
 		uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 		void createCommandBuffers();
 		void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
