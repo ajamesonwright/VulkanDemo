@@ -25,6 +25,8 @@ namespace vd {
 	private:
 		const std::string VERT = "shaders/shader.vert.spv";
 		const std::string FRAG = "shaders/shader.frag.spv";
+		const std::string MODEL_PATH = "models/viking_room.obj";
+		const std::string TEXTURE_PATH = "textures/viking_room.png";
 
 		WindowWrapper window{ WIDTH, HEIGHT, "Vulkan Demo" };
 		VulkanPipeline pipeline;

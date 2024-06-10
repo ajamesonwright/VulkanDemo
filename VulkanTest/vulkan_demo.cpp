@@ -142,7 +142,7 @@ namespace vd {
     }
 
     void VulkanDemo::createPipeline() {
-        pipeline.createGraphicsPipeline(window, VERT, FRAG);
+        pipeline.createGraphicsPipeline(window, VERT, FRAG, MODEL_PATH, TEXTURE_PATH);
     }
 
     void VulkanDemo::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {

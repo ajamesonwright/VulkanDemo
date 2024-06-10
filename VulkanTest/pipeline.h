@@ -5,8 +5,10 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/hash.hpp>
 
 #include <algorithm>
 #include <array>
@@ -17,6 +19,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "window_wrapper.h"
@@ -83,7 +86,21 @@ struct Vertex {
 		
 		return attributeDescriptions;
 	}
+
+	bool operator==(const Vertex& other) const {
+		return pos == other.pos && colour == other.colour && texCoord == other.texCoord;
+	}
 };
+
+namespace std {
+	template<> struct hash<Vertex> {
+		size_t operator()(Vertex const& vertex) const {
+			return ((hash<glm::vec3>()(vertex.pos) ^
+				(hash<glm::vec3>()(vertex.colour) << 1)) >> 1) ^
+				(hash<glm::vec2>()(vertex.texCoord) << 1);
+		}
+	};
+}
 
 struct UniformBufferObject {
 	alignas(16) glm::mat4 model;
@@ -96,29 +113,12 @@ namespace vd {
 	public:
 		const int MAX_FRAMES_IN_FLIGHT = 2;
 
-		void createGraphicsPipeline(WindowWrapper& window, const std::string& vertPath, const std::string& fragPath);
+		void createGraphicsPipeline(WindowWrapper& window, const std::string& vertPath, const std::string& fragPath, const std::string& modelPath, const std::string& texturePath);
 		void cleanUp();
 		void drawFrame();
 		void setFramebufferResized();
 
 	private:
-		const std::vector<Vertex> vertices = {
-			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-			{{0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-			{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-			{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-
-			{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-			{{0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-			{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-			{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
-		};
-
-		const std::vector<uint16_t> indices = {
-			0, 1, 2, 2, 3, 0,
-			4, 5, 6, 6, 7, 4
-		};
-
 		WindowWrapper* window = nullptr;
 		VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 		VkDevice logicalDevice = VK_NULL_HANDLE;
@@ -143,6 +143,8 @@ namespace vd {
 		VkImage depthImage;
 		VkDeviceMemory depthImageMemory;
 		VkImageView depthImageView;
+		std::vector<Vertex> vertices;
+		std::vector<uint32_t> indices;
 		VkBuffer vertexBuffer;
 		VkDeviceMemory vertexBufferMemory;
 		VkBuffer indexBuffer;
@@ -182,10 +184,11 @@ namespace vd {
 		VkFormat findDepthFormat();
 		VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 		bool hasStencilComponent(VkFormat format);
-		void createTextureImage();
+		void createTextureImage(const std::string& path);
 		void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 		void createTextureImageView();
 		void createTextureSampler();
+		void loadModel(const std::string& modelPath);
 		void createVertexBuffer();
 		void createIndexBuffer();
 		void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
