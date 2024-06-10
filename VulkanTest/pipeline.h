@@ -1,13 +1,11 @@
 #pragma once
 
-#define GLM_FORCE_RADIANS
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
+
+#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
-#define STB_IMAGE_IMPLEMENTION
-#include <stb_image.h>
 
 #include <algorithm>
 #include <array>
@@ -81,9 +79,9 @@ struct Vertex {
 };
 
 struct UniformBufferObject {
-	glm::mat4 model;
-	glm::mat4 view;
-	glm::mat4 proj;
+	alignas(16) glm::mat4 model;
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 proj;
 };
 
 namespace vd {
@@ -127,6 +125,8 @@ namespace vd {
 		VkCommandPool commandPool;
 		VkImage textureImage;
 		VkDeviceMemory textureImageMemory;
+		VkImageView textureImageView;
+		VkSampler textureSampler;
 		VkBuffer vertexBuffer;
 		VkDeviceMemory vertexBufferMemory;
 		VkBuffer indexBuffer;
@@ -156,6 +156,7 @@ namespace vd {
 		void recreateSwapChain();
 		void cleanUpSwapChain();
 		void createImageViews();
+		VkImageView createImageView(VkImage image, VkFormat format);
 		void createRenderPass();
 		void createDescriptorSetLayout();
 		void createGraphicsPipeline(const std::string& vertPath, const std::string& fragPath);
@@ -163,10 +164,17 @@ namespace vd {
 		void createCommandPool();
 		void createTextureImage();
 		void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+		void createTextureImageView();
+		void createTextureSampler();
 		void createVertexBuffer();
 		void createIndexBuffer();
 		void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 		void copyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size);
+		void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+		VkCommandBuffer beginSingleTimeCommands();
+		void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+		void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+		void createSyncObjects();
 		void createUniformBuffers();
 		void createDescriptorPool();
 		void createDescriptorSets();
@@ -174,7 +182,6 @@ namespace vd {
 		uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 		void createCommandBuffers();
 		void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-		void createSyncObjects();
 		VkShaderModule createShaderModule(const std::vector<char>& code);
 		static std::vector<char> readFile(const std::string& filePath);
 	};
