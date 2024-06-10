@@ -172,12 +172,16 @@ namespace vd {
 		void recreateSwapChain();
 		void cleanUpSwapChain();
 		void createImageViews();
-		VkImageView createImageView(VkImage image, VkFormat format);
+		VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 		void createRenderPass();
 		void createDescriptorSetLayout();
 		void createGraphicsPipeline(const std::string& vertPath, const std::string& fragPath);
 		void createFramebuffers();
 		void createCommandPool();
+		void createDepthResources();
+		VkFormat findDepthFormat();
+		VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+		bool hasStencilComponent(VkFormat format);
 		void createTextureImage();
 		void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 		void createTextureImageView();
