@@ -161,11 +161,16 @@ namespace vd {
 		std::vector<VkFence> inFlightFences;
 		uint32_t currentFrame = 0;
 		bool framebufferResized = false;
+		VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+		VkImage colourImage;
+		VkDeviceMemory colourImageMemory;
+		VkImageView colourImageView;
 
 		void selectPhysicalDevice();
 		bool isDeviceSuitable(VkPhysicalDevice device);
 		QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 		bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+		VkSampleCountFlagBits getMaxUsableSampleCount();
 		SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 		VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		VkPresentModeKHR chooseSwapSurfacePresentMode(const std::vector<VkPresentModeKHR> availablePresentModes);
@@ -181,12 +186,13 @@ namespace vd {
 		void createGraphicsPipeline(const std::string& vertPath, const std::string& fragPath);
 		void createFramebuffers();
 		void createCommandPool();
+		void createColourResources();
 		void createDepthResources();
 		VkFormat findDepthFormat();
 		VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 		bool hasStencilComponent(VkFormat format);
 		void createTextureImage(const std::string& path);
-		void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+		void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 		void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 		void createTextureImageView();
 		void createTextureSampler();
